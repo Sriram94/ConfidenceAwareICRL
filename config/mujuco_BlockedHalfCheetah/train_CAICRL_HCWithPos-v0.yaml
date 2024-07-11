@@ -4,8 +4,8 @@ device: 'cpu'
 verbose: 1
 env:
   config_path: null
-  train_env_id : 'HCWithPos-v0'
-  eval_env_id: 'HCWithPos-v0'
+  train_env_id : 'HCWithPosNoise-v0'
+  eval_env_id: 'HCWithPosNoise-v0'
   save_dir: '../save_model'
   cost_info_str: 'cost'
   use_cost: True
@@ -17,6 +17,8 @@ env:
   record_info_names: ["xpos"]
   record_info_input_dims: [0] # the dim of record info in inputs=(obs, action)
   visualize_info_ranges: [[-30, 30]]
+  noise_mean: 0
+  noise_std: 0.2
 
 running:
   n_iters: 30
