@@ -129,3 +129,73 @@ class WalkerWithPosTest(WalkerWithPos):
             reward = 0
 
         return ob, reward, done, info
+
+
+
+
+class WalkerWithPosNoise(walker2d.Walker2dEnv):
+
+    def __init__(self, noise_mean, noise_std):
+        self.noise_mean = noise_mean
+        self.noise_std = noise_std
+        super().__init__()
+
+
+    def _get_obs(self):
+        return np.concatenate([
+            self.sim.data.qpos.flat,
+            self.sim.data.qvel.flat,
+        ])
+
+    def old_reward(self, xposbefore, xposafter, action):
+        reward_ctrl = (-1e-3)/2 * np.square(action).sum()
+        reward_run = abs(xposafter - xposbefore) / self.dt
+        alive_bonus = 1
+        reward = reward_ctrl + reward_run + alive_bonus
+
+        info = dict(
+            reward_run=reward_run,
+            reward_ctrl=reward_ctrl,
+            x_position=xposafter
+        )
+
+        return reward, info
+
+    def new_reward(self, xposbefore, xposafter, action):
+        reward_ctrl = (-1e-3)/2 * np.square(action).sum()
+        # if xposafter < 0:
+        #     reward_dist = 1.5 * abs(xposafter)
+        # else:
+        reward_dist = abs(xposafter)
+        reward_run = reward_dist / self.dt
+
+        reward = reward_dist + reward_ctrl
+        info = dict(
+            reward_run=reward_run,
+            reward_ctrl=reward_ctrl,
+            reward_dist=reward_dist,
+            x_position=xposafter
+        )
+
+        return reward, info
+
+    def step(self, action):
+        xposbefore = self.sim.data.qpos[0]
+        self.do_simulation(action, self.frame_skip)
+        qpos = self.sim.data.qpos.flat[:] + np.random.normal(self.noise_mean, self.noise_std)
+        qvel = self.sim.data.qvel.flat[:] + np.random.normal(self.noise_mean, self.noise_std) 
+        xposafter, height, ang = self.sim.data.qpos[0:3]
+        ob = self._get_obs()
+
+        if REWARD_TYPE == 'new':
+            reward, info = self.new_reward(xposbefore,
+                                           xposafter,
+                                           action)
+        elif REWARD_TYPE == 'old':
+            reward, info = self.old_reward(xposbefore,
+                                           xposafter,
+                                           action)
+
+        done = not (height > 0.8 and height < 2.0 and
+                    ang > -1.0 and ang < 1.0)
+        return ob, reward, done, info

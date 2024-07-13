@@ -16,6 +16,14 @@ register(
     nondeterministic=False,
 )
 
+register(
+    id="InvertedPendulumWallNoise-v0",
+    entry_point=ABS_PATH+".inverted_pendulum:InvertedPendulumWallNoise",
+    max_episode_steps=PENDULUM_LEN,
+    reward_threshold=None,
+    nondeterministic=False,
+)
+
 # =========================================================================== #
 #                                   Cheetah                                   #
 # =========================================================================== #
@@ -109,6 +117,13 @@ register(
     nondeterministic=False,
 )
 
+register(
+    id="WalkerWithPosNoise-v0",
+    entry_point=ABS_PATH+".walker:WalkerWithPosNoise",
+    max_episode_steps=WALKER_LEN,
+    reward_threshold=None,
+    nondeterministic=False,
+)
 # =========================================================================== #
 #                                  Swimmer                                    #
 # =========================================================================== #
@@ -134,6 +149,15 @@ register(
 register(
     id="SwimmerWithPosTest-v0",
     entry_point=ABS_PATH+".swimmer:SwimmerWithPosTest",
+    max_episode_steps=SWIMMER_LEN,
+    reward_threshold=None,
+    nondeterministic=False,
+)
+
+
+register(
+    id="SwimmerWithPosNoise-v0",
+    entry_point=ABS_PATH+".swimmer:SwimmerWithPosNoise",
     max_episode_steps=SWIMMER_LEN,
     reward_threshold=None,
     nondeterministic=False,
@@ -221,6 +245,15 @@ register(
     reward_threshold=None,
     nondeterministic=False,
 )
+
+register(
+    id="AntWallNoise-v0",
+    entry_point=ABS_PATH+".ant:AntWallNoise",
+    max_episode_steps=ANT_LEN,
+    reward_threshold=None,
+    nondeterministic=False,
+)
+
 
 register(
     id="AntWallTest-v0",

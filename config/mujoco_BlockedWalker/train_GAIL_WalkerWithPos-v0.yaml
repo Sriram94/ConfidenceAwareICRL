@@ -4,8 +4,8 @@ device: 'cuda'
 verbose: 2
 env:
   config_path: null
-  train_env_id : 'WalkerWithPos-v0'
-  eval_env_id: 'WalkerWithPos-v0'
+  train_env_id : 'WalkerWithPosNoise-v0'
+  eval_env_id: 'WalkerWithPosNoise-v0'
   save_dir: '../save_model'
   cost_info_str: 'cost'
   use_cost: False
@@ -16,6 +16,8 @@ env:
   record_info_names: ['x_position']
   record_info_input_dims: [ 0 ] # the dim of record info in inputs=(obs, action)
   visualize_info_ranges: [ [ -10, 10 ] ]
+  noise_mean: 0
+  noise_std: 0.2
 
 running:
   save_every: 1000000

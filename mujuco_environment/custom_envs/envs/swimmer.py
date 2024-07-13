@@ -97,6 +97,74 @@ class SwimmerWithPos(swimmer.SwimmerEnv):
 
         return ob, reward, done, info
 
+
+
+class SwimmerWithPosNoise(swimmer.SwimmerEnv):
+
+    def __init__(self, noise_mean, noise_std):
+        self.noise_mean = noise_mean
+        self.noise_std = noise_std
+        super().__init__()
+
+    def _get_obs(self):
+        return np.concatenate([
+            self.sim.data.qpos.flat,
+            self.sim.data.qvel.flat,
+        ])
+
+    def old_reward(self, xposbefore, xposafter, action):
+        reward_ctrl = (-1e-4)/2 * np.square(action).sum()
+        reward_run = abs(xposafter - xposbefore) / self.dt
+        reward = reward_ctrl + reward_run
+
+        info = dict(
+                reward_run=reward_run,
+                reward_ctrl=reward_ctrl,
+                x_position=xposafter
+                )
+
+        return reward, info
+
+
+    def new_reward(self, xposbefore, xposafter, action):
+        reward_ctrl = (-1e-4)/2 * np.square(action).sum()
+        reward_dist = abs(xposafter) - abs(xposbefore)
+        reward_run  = reward_dist / self.dt
+
+        if np.sign(xposafter) == np.sign(xposbefore):
+            reward = reward_ctrl + reward_run
+        else:
+            reward = 0
+
+        info = dict(
+                reward_run=reward_run,
+                reward_ctrl=reward_ctrl,
+                reward_dist=reward_dist,
+                x_position=xposafter
+                )
+
+        return reward, info
+
+
+    def step(self, action):
+        xposbefore = self.sim.data.qpos[0]
+        self.do_simulation(action, self.frame_skip)
+        xposafter = self.sim.data.qpos[0]
+        qpos = self.sim.data.qpos.flat[:] + np.random.normal(self.noise_mean, self.noise_std)
+        qvel = self.sim.data.qvel.flat[:] + np.random.normal(self.noise_mean, self.noise_std)
+        ob = self._get_obs()
+        if REWARD_TYPE == 'new':
+            reward, info = self.new_reward(xposbefore,
+                                           xposafter,
+                                           action)
+        elif REWARD_TYPE == 'old':
+            reward, info = self.old_reward(xposbefore,
+                                           xposafter,
+                                           action)
+        done = False
+
+        return ob, reward, done, info
+
 #class SwimmerWithPosTest(SwimmerWithPos):
 #    def _get_obs(self):
 #        return np.concatenate([

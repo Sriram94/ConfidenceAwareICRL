@@ -4,8 +4,8 @@ device: 'cuda'
 verbose: 2
 env:
   config_path: null
-  train_env_id : 'WalkerWithPos-v0'
-  eval_env_id: 'WalkerWithPos-v0'
+  train_env_id : 'WalkerWithPosNoise-v0'
+  eval_env_id: 'WalkerWithPosNoise-v0'
   save_dir: '../save_model'
   cost_info_str: 'cost'
   use_cost: True
@@ -15,6 +15,8 @@ env:
   dont_normalize_reward: False
   dont_normalize_cost: False  # cost
   record_info_names: ['x_position']
+  noise_mean: 0
+  noise_std: 0.2
 
 running:
   n_iters: 100
