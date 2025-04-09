@@ -93,6 +93,7 @@ class CAICRLConstraintNet(ConstraintNet):
 
         self.network = nn.Sequential(
                 nn.TransformerEncoder(encoder_layer, num_layers=6),
+                *create_mlp(self.input_dims, 2, self.hidden_sizes),
                 nn.Sigmoid()
         )
         self.network.to(self.device)
@@ -151,10 +152,10 @@ class CAICRLConstraintNet(ConstraintNet):
                     a_b = self.network(x).detach().cpu().numpy()
                     sum_1 = sum_1 + a_b[:, 0]
                     sum_2 = sum_2 + a_b[:, 1]
-                x = np.linspace(beta.ppf(0.001, sum_1, sum_2), beta.ppf(0.999, sum_1, sum_2), 1000)
+                x = np.linspace(scipy.stats.beta.ppf(0.001, sum_1, sum_2), scipy.stats.beta.ppf(0.999, sum_1, sum_2), 1000)
                 distribution=beta.pdf(x, sum_1, sum_2)
 
-                quantiles = quantile(distribution,[1-self.confidence])
+                quantiles = self.quantile(distribution,[1-self.confidence])
                 cost = quantiles
 
             elif mode == 'CVaR':
@@ -185,10 +186,10 @@ class CAICRLConstraintNet(ConstraintNet):
 
 
 
-    def quantile(x,quantiles):
+    def quantile(self, x, quantiles):
         xsorted = sorted(x)
         qvalues = [xsorted[int(q * len(xsorted))] for q in quantiles]
-        return zip(quantiles,qvalues)
+        return qvalues
 
 
 
@@ -272,11 +273,11 @@ class CAICRLConstraintNet(ConstraintNet):
 
 
 
+                regularizer_loss = th.tensor(0)
 
                 if self.train_gail_lambda:
                     nominal_loss = self.criterion(nominal_preds_all, th.zeros(*nominal_preds_all.size()))
                     expert_loss = self.criterion(expert_preds_all, th.ones(*expert_preds_all.size()))
-                    regularizer_loss = th.tensor(0)
                     loss = nominal_loss + expert_loss
                 else:
                     expert_preds = torch.clip(expert_preds_all, min=self.eps, max=1)
@@ -362,15 +363,16 @@ class CAICRLConstraintNet(ConstraintNet):
                 sum_2 = 0
                 for b in new_batch: 
                     a_b = self.network(b).detach().cpu().numpy()
-                    sum_1 = sum_1 + a_b[:, 0]
-                    sum_2 = sum_2 + a_b[:, 1]
-                x = np.linspace(beta.ppf(0.001, sum_1, sum_2), beta.ppf(0.999, sum_1, sum_2), 1000)
-                distribution=beta.pdf(x, sum_1, sum_2)
-                distribution2=beta.pdf(x, sum_1+0.002, sum_2+0.002)
+                    sum_ab = np.sum(a_b, axis = 0)
+                    sum_1 = sum_1 + sum_ab[0]
+                    sum_2 = sum_2 + sum_ab[1]
+                x = np.linspace(scipy.stats.beta.ppf(0.001, sum_1, sum_2), scipy.stats.beta.ppf(0.999, sum_1, sum_2), 1000)
+                distribution=scipy.stats.beta.pdf(x, sum_1, sum_2)
+                distribution2=scipy.stats.beta.pdf(x, sum_1+0.002, sum_2+0.002)
 
-                quantiles = quantile(distribution,[1-self.confidence])
-                quantiles2 = quantile(distribution2,[1-self.confidence])
-                new_loss = (quantiles - quantiles2)/0.002
+                quantiles = self.quantile(distribution,[1-self.confidence])
+                quantiles2 = self.quantile(distribution2,[1-self.confidence])
+                new_loss = (quantiles2[0] - quantiles[0])/0.002
 
                 cost = quantiles
                 nominal_alpha_beta = self.network(nominal_batch)
@@ -383,10 +385,10 @@ class CAICRLConstraintNet(ConstraintNet):
                 expert_beta = expert_alpha_beta[:, 1]
                 expert_preds = torch.distributions.Beta(expert_alpha, expert_beta).rsample()
 
+                regularizer_loss = th.tensor(0)
                 if self.train_gail_lambda:
                     nominal_loss = self.criterion(nominal_preds, th.zeros(*nominal_preds.size()))
                     expert_loss = self.criterion(expert_preds, th.ones(*expert_preds.size()))
-                    regularizer_loss = th.tensor(0)
                     loss = nominal_loss + expert_loss
                 else:
                     expert_preds = torch.clip(expert_preds, min=self.eps, max=1)

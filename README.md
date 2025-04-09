@@ -2,7 +2,6 @@
 This is the code for ICML paper: "Confidence Aware Inverse Constrained Reinforcement Learning". The full paper is on [arXiv](https://arxiv.org/pdf/2406.16782). 
 
 
-Note: This codebase is under active clean up and refractoring. 
 
 
 
